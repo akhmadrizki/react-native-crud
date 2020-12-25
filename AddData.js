@@ -6,10 +6,14 @@ import {
   Text,
   FlatList,
   TextInput,
+  Button,
+  Image,
+  ScrollView,
 } from 'react-native';
 
 // firestore
 import firestore from '@react-native-firebase/firestore';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 
 class AddData extends Component {
   constructor(props) {
@@ -18,6 +22,7 @@ class AddData extends Component {
       nama: '',
       nim: '',
       prodi: '',
+      filePath: '',
     };
   }
 
@@ -56,6 +61,41 @@ class AddData extends Component {
     console.log(allData);
   };
 
+  // ini fungsi untuk menampilkan imagepicker (camera)
+  chooseFile = (type) => {
+    let options = {
+      mediaType: type,
+      maxWidth: 300,
+      maxHeight: 550,
+      quality: 1,
+    };
+    launchImageLibrary(options, (response) => {
+      console.log('Response = ', response);
+
+      if (response.didCancel) {
+        alert('User cancelled camera picker');
+        return;
+      } else if (response.errorCode == 'camera_unavailable') {
+        alert('Camera not available on device');
+        return;
+      } else if (response.errorCode == 'permission') {
+        alert('Permission not satisfied');
+        return;
+      } else if (response.errorCode == 'others') {
+        alert(response.errorMessage);
+        return;
+      }
+      console.log('base64 -> ', response.base64);
+      console.log('uri -> ', response.uri);
+      console.log('width -> ', response.width);
+      console.log('height -> ', response.height);
+      console.log('fileSize -> ', response.fileSize);
+      console.log('type -> ', response.type);
+      console.log('fileName -> ', response.fileName);
+      this.setState({filePath: response});
+    });
+  };
+
   AddData = () => {
     firestore()
       .collection('Users')
@@ -63,6 +103,7 @@ class AddData extends Component {
         name: this.state.nama,
         nim: this.state.nim,
         prodi: this.state.prodi,
+        image: this.state.filePath.uri,
       })
       .then(() => {
         console.log('User added!');
@@ -81,7 +122,7 @@ class AddData extends Component {
 
   render() {
     return (
-      <View style={{flex: 1}}>
+      <ScrollView style={{flex: 1}}>
         <Text>Nama: </Text>
         <TextInput
           placeholder="masukkan nama"
@@ -109,6 +150,19 @@ class AddData extends Component {
           namaState="prodi"
         />
 
+        <Image
+          source={{uri: this.state.filePath.uri}}
+          style={{width: 80, height: 60}}
+        />
+        <Text style={styles.textStyle}>{this.state.filePath.uri}</Text>
+
+        <TouchableOpacity
+          activeOpacity={0.5}
+          style={styles.buttonStyle}
+          onPress={() => this.chooseFile('photo')}>
+          <Text style={styles.textStyle}>Choose Image</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.tambah} onPress={() => this.AddData()}>
           <Text style={{color: '#fff', textAlign: 'center'}}>Input Data</Text>
         </TouchableOpacity>
@@ -119,6 +173,10 @@ class AddData extends Component {
             <View>
               <Text>{item.name}</Text>
               <Text>{item.prodi}</Text>
+              <Image
+                source={{uri: item.image}}
+                style={{width: 40, height: 40}}
+              />
 
               <TouchableOpacity
                 style={styles.tambah}
@@ -128,6 +186,7 @@ class AddData extends Component {
                     name: item.name,
                     nim: item.nim,
                     prodi: item.prodi,
+                    image: item.image,
                   })
                 }>
                 <Text style={{color: '#fff', textAlign: 'center'}}>
@@ -145,7 +204,7 @@ class AddData extends Component {
             </View>
           )}
         />
-      </View>
+      </ScrollView>
     );
   }
 }
@@ -162,6 +221,18 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
+  },
+  textStyle: {
+    padding: 10,
+    color: 'black',
+    textAlign: 'center',
+  },
+  buttonStyle: {
+    alignItems: 'center',
+    backgroundColor: '#DDDDDD',
+    padding: 5,
+    marginVertical: 10,
+    width: '100%',
   },
 });
 

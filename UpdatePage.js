@@ -6,10 +6,12 @@ import {
   Text,
   FlatList,
   TextInput,
+  Image,
 } from 'react-native';
 
 // firestore
 import firestore from '@react-native-firebase/firestore';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 
 class UpdatePage extends Component {
   constructor(props) {
@@ -19,6 +21,7 @@ class UpdatePage extends Component {
       nama: this.props.route.params.name,
       nim: this.props.route.params.nim,
       prodi: this.props.route.params.prodi,
+      image: this.props.route.params.image,
     };
   }
 
@@ -33,6 +36,41 @@ class UpdatePage extends Component {
     console.log(this.state);
   };
 
+  // ini fungsi untuk menampilkan imagepicker (camera)
+  chooseFile = (type) => {
+    let options = {
+      mediaType: type,
+      maxWidth: 300,
+      maxHeight: 550,
+      quality: 1,
+    };
+    launchImageLibrary(options, (response) => {
+      console.log('Response = ', response);
+
+      if (response.didCancel) {
+        alert('User cancelled camera picker');
+        return;
+      } else if (response.errorCode == 'camera_unavailable') {
+        alert('Camera not available on device');
+        return;
+      } else if (response.errorCode == 'permission') {
+        alert('Permission not satisfied');
+        return;
+      } else if (response.errorCode == 'others') {
+        alert(response.errorMessage);
+        return;
+      }
+      console.log('base64 -> ', response.base64);
+      console.log('uri -> ', response.uri);
+      console.log('width -> ', response.width);
+      console.log('height -> ', response.height);
+      console.log('fileSize -> ', response.fileSize);
+      console.log('type -> ', response.type);
+      console.log('fileName -> ', response.fileName);
+      this.setState({filePath: response});
+    });
+  };
+
   UpdateData = () => {
     firestore()
       .collection('Users')
@@ -41,6 +79,7 @@ class UpdatePage extends Component {
         name: this.state.nama,
         nim: this.state.nim,
         prodi: this.state.prodi,
+        image: this.state.image,
       })
       .then(() => {
         console.log('User updated!');
@@ -77,6 +116,18 @@ class UpdatePage extends Component {
           value={this.state.prodi}
           namaState="prodi"
         />
+
+        <Image
+          source={{uri: this.state.image}}
+          style={{width: 300, height: 200}}
+        />
+
+        <TouchableOpacity
+          activeOpacity={0.5}
+          style={styles.buttonStyle}
+          onPress={() => this.chooseFile('photo')}>
+          <Text style={styles.textStyle}>Choose Image</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tambah}
